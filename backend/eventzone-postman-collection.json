@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "EventZone API",
+    "_postman_id": "e5d8f8d0-0000-4d2b-aaaa-000000000000",
+    "description": "Postman collection for EventZone backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"me@example.com\",\n  \"password\": \"pass123\",\n  \"name\": \"Me\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","register"]
+        }
+      }
+    },
+    {
+      "name": "Auth - Login (sets token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"me@example.com\",\n  \"password\": \"pass123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var json = pm.response.json();",
+              "if(json.token) { pm.collectionVariables.set('token', json.token); }",
+              "console.log('token set:', pm.collectionVariables.get('token'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events - List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/events",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","events"]
+        }
+      }
+    },
+    {
+      "name": "Events - Detail",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/events/22222222-2222-2222-2222-222222222222",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","events","22222222-2222-2222-2222-222222222222"]
+        }
+      }
+    },
+    {
+      "name": "Bookings - Create (auth)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ticketCategoryId\": \"33333333-3333-3333-3333-333333333333\",\n  \"quantity\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","bookings"]
+        }
+      }
+    },
+    {
+      "name": "Bookings - Mine (auth)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings/mine",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","bookings","mine"]
+        }
+      }
+    },
+    {
+      "name": "Bookings - Cancel (auth)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings/{bookingId}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","bookings","{bookingId}","cancel"],
+          "variable": [
+            { "key": "bookingId", "value": "<replace-with-booking-uuid>" }
+          ]
+        }
+      }
+    }
+  ]
+}
