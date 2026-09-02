@@ -1,0 +1,150 @@
+.banner {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  overflow: hidden;
+}
+
+.banner-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.banner-slide.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.banner-overlay {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-content {
+  text-align: center;
+  color: #fff;
+  padding: 1rem;
+  max-width: 600px;
+}
+
+.banner-content h1 {
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+}
+
+.banner-content p {
+  font-size: 1.05rem;
+  margin-bottom: 1.4rem;
+  color: #f0f0f0;
+}
+
+.browse-btn {
+  background-color: #4da3ff;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.8rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.browse-btn:hover {
+  background-color: #2f8ce0;
+}
+
+/* Arrows */
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border: none;
+  font-size: 1.4rem;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 2;
+  transition: background-color 0.2s ease;
+}
+
+.banner-arrow:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.banner-arrow.left {
+  left: 1rem;
+}
+
+.banner-arrow.right {
+  right: 1rem;
+}
+
+/* Dots */
+.banner-dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dot.active {
+  background: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .banner {
+    height: 360px;
+  }
+
+  .banner-content h1 {
+    font-size: 1.8rem;
+  }
+
+  .banner-content p {
+    font-size: 0.9rem;
+  }
+
+  .banner-arrow {
+    font-size: 1.1rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .banner {
+    height: 300px;
+  }
+
+  .banner-content h1 {
+    font-size: 1.4rem;
+  }
+
+  .browse-btn {
+    padding: 0.6rem 1.4rem;
+    font-size: 0.9rem;
+  }
+}

@@ -7,7 +7,6 @@ export default function Home(){
   useEffect(()=>{ fetch(API_BASE + '/api/events').then(r=>r.json()).then(setEvents).catch(e=>console.error(e)) },[])
   return (
     <div>
-      <h1>Events</h1>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
         {events.map(e=> (
           <div key={e.id} className='card'>
