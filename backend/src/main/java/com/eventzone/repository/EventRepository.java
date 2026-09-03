@@ -8,4 +8,14 @@ import java.util.UUID;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findByCategory_Name(String categoryName);
+
+    List<Event> findByOrganiser_Id(UUID organiserId);
+
+    /** Public browse list hides events an admin has deactivated. */
+    List<Event> findByActiveTrue();
+
+    List<Event> findByCategory_NameAndActiveTrue(String categoryName);
+
+    /** Guards category deletion. */
+    boolean existsByCategory_Id(UUID categoryId);
 }

@@ -1,35 +1,62 @@
 package com.eventzone.controller;
 
-import com.eventzone.model.User;
+import com.eventzone.dto.auth.AuthResponse;
+import com.eventzone.dto.auth.LoginRequest;
+import com.eventzone.dto.auth.RegisterRequest;
+import com.eventzone.dto.auth.UserResponse;
+import com.eventzone.dto.common.ErrorResponse;
 import com.eventzone.service.AuthService;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Successful response"),
+        @ApiResponse(responseCode = "400", description = "Validation or bad request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Resource not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+})
 public class AuthController {
+
     private final AuthService authService;
 
-    public AuthController(AuthService authService) { this.authService = authService; }
-
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String,String> body) {
-        String email = body.get("email");
-        String password = body.get("password");
-        String name = body.getOrDefault("name", "");
-        if (email == null || password == null) return ResponseEntity.badRequest().body(Map.of("error","VALIDATION_ERROR","message","email and password required"));
-        User u = authService.register(email,password,name);
-        return ResponseEntity.status(201).body(Map.of("id", u.getId(), "email", u.getEmail()));
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Registration attempt received for email={}", request.email());
+        UserResponse response = authService.register(request);
+        log.info("Registration succeeded for email={} userId={}", request.email(), response.id());
+        return response;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String,String> body) {
-        String email = body.get("email");
-        String password = body.get("password");
-        var t = authService.login(email,password);
-        if (t.isPresent()) return ResponseEntity.ok(Map.of("token", t.get()));
-        return ResponseEntity.status(401).body(Map.of("error","AUTH_FAILED","message","invalid credentials"));
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login attempt received for email={}", request.email());
+        AuthResponse response = authService.login(request);
+        log.info("Login succeeded for email={} role={}", response.email(), response.role());
+        return response;
+    }
+
+    /**
+     * Stateless JWT means there is no server-side session to invalidate;
+     * the client is simply expected to discard its token. This endpoint
+     * exists so the frontend has a symmetrical call to make on logout.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        log.info("Logout request received; JWT logout is stateless and no server-side session is invalidated.");
+        return ResponseEntity.noContent().build();
     }
 }
