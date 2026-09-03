@@ -28,7 +28,7 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = '11111111-1111-1111-1111-111111
 INSERT INTO users(id, email, password_hash, role, name, created_at)
 SELECT '55555555-5555-5555-5555-555555555555', 'org1@eventzone.com',
        '$2a$10$/6pmZILyNujfImJHJZenE..Ov53.j7YX.t8eCrRVyRFXsFYVZS3ne',
-       'ORGANISER', 'Arjun Events', CURRENT_TIMESTAMP
+       'ORGANISER', 'Abhishek Events', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = '55555555-5555-5555-5555-555555555555');
 
 INSERT INTO users(id, email, password_hash, role, name, created_at)
@@ -52,7 +52,7 @@ SELECT 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'Workshop'
 WHERE NOT EXISTS (SELECT 1 FROM event_category WHERE id = 'cccccccc-cccc-cccc-cccc-cccccccccccc');
 
 -- Events --------------------------------------------------------------------
--- Organised by org1 (Arjun Events), per the spec, not by the admin account.
+-- Organised by org1 (Abhishek Events), per the spec, not by the admin account.
 
 INSERT INTO event(id, title, description, event_date, venue, cover_image_url, organiser_id, category_id, active)
 SELECT '22222222-2222-2222-2222-222222222222', 'Rock Night 2025',
