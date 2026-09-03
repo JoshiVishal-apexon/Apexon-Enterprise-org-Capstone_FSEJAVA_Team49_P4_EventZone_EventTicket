@@ -1,5 +1,6 @@
 package com.eventzone.model;
 
+import com.eventzone.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +23,16 @@ public class Event {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "event")
     private List<TicketCategory> ticketCategories;
 
+    /**
+     * Admins deactivate an event to hide it from the public browse list without
+     * deleting it (and without disturbing bookings already made against it).
+     */
+    @Column(nullable = false)
+    private boolean active = true;
+
     public UUID getId() { return id; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getDescription() { return description; }

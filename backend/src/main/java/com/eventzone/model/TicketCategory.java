@@ -2,6 +2,7 @@ package com.eventzone.model;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 @Entity
@@ -16,8 +17,14 @@ public class TicketCategory {
     private int availableSeats;
 
     public UUID getId() { return id; }
+    // Serialising the whole Event would recurse (Event -> ticketCategories ->
+    // event), so the association is hidden and only the title is exposed --
+    // which is what the My Bookings table needs.
     @JsonIgnore
     public Event getEvent() { return event; }
+
+    @JsonProperty("eventTitle")
+    public String getEventTitle() { return event == null ? null : event.getTitle(); }
     public void setEvent(Event event) { this.event = event; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

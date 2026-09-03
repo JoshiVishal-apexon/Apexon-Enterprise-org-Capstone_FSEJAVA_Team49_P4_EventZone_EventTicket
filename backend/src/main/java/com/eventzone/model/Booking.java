@@ -1,5 +1,6 @@
 package com.eventzone.model;
 
+import com.eventzone.entity.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;

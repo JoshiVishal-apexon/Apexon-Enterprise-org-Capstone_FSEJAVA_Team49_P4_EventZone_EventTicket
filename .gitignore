@@ -47,6 +47,11 @@ Thumbs.db
 # Backend specific
 /backend/target/
 
+# Local H2 database (file-backed dev data; delete to reset)
+/backend/data/
+*.mv.db
+*.trace.db
+
 # Misc
 npm-debug.log*
 yarn-debug.log*
