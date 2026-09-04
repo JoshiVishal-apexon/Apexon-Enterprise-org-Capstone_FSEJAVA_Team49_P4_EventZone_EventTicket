@@ -10,6 +10,7 @@ import com.eventzone.repository.BookingRepository;
 import com.eventzone.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class OrganiserService {
     private final EventRepository eventRepository;
     private final BookingRepository bookingRepository;
 
+    @Transactional(readOnly = true)
     public List<OrganiserEventResponse> myEvents(User organiser) {
         return eventRepository.findByOrganiser_Id(organiser.getId()).stream()
                 .map(this::toOrganiserEventResponse)
