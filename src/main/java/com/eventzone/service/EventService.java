@@ -34,7 +34,7 @@ public class EventService {
 
     public List<EventSummaryResponse> listActive(String categoryName) {
         List<Event> events = (categoryName == null || categoryName.isBlank())
-                ? eventRepository.findByActiveTrue()
+                ? eventRepository.findByActiveTrueAndCategoryIsNotNull()
                 : eventRepository.findByActiveTrueAndCategory_NameIgnoreCase(categoryName);
 
         return events.stream()
@@ -159,7 +159,7 @@ public class EventService {
 
     public List<EventSummaryResponse> listAllEvents(String categoryName) {
         List<Event> events = (categoryName == null || categoryName.isBlank())
-                ? eventRepository.findAll()
+                ? eventRepository.findByActiveTrueAndCategoryIsNotNull()
                 : eventRepository.findByActiveTrueAndCategory_NameIgnoreCase(categoryName);
 
         return events.stream()
