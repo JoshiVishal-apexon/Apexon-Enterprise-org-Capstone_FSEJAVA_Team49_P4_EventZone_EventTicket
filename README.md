@@ -1,144 +1,190 @@
-# EventZone (Monolithic)
+# EventZone — Backend API
 
-Build an event ticket booking web application where users can browse upcoming events
-(concerts, sports, workshops), choose a ticket category, and register/book tickets.
-Event organisers manage their event listings. Admins manage categories and event visibility.
+EventZone is a Spring Boot 3 / Java 17 ticketing backend for managing events, ticket categories, bookings, and role-based access. The platform supports administrators, organisers, and attendees with protected business flows and consistent API responses.
 
-Monorepo with a Spring Boot backend and React + TypeScript frontend.
+Completed project updates
 
-## Run everything on one port (http://localhost:8080)
+1. Standardized error handling
+- Added a consistent error payload format across the API.
+- All handled exceptions return a structured response with `timestamp`, `path`, `error`, and `message`.
+- Validation errors now normalize to user-friendly messages such as `Field is required`.
 
-The backend serves the built React app from the same origin as the API, so there is no
-dev proxy and no CORS involved.
-
-```
-cd frontend
-npm install
-npm run build          # produces frontend/dist
-
-cd ../backend
-mvn spring-boot:run    # http://localhost:8080  -> UI + API
-```
-
-Or build a single self-contained jar:
-
-```
-cd frontend && npm run build
-cd ../backend && mvn clean package
-java -jar target/backend-1.0.0.jar
+Example response:
+```json
+{
+  "timestamp": "2025-09-12T12:00:00Z",
+  "path": "/api/events",
+  "error": "VALIDATION_ERROR",
+  "message": "Field is required"
+}
 ```
 
-The Maven build copies `frontend/dist` into `classpath:/static` (see the
-`copy-frontend-build` execution in `backend/pom.xml`). Re-run `npm run build` after
-changing frontend code, then restart the backend to pick it up.
+2. Swagger/OpenAPI documentation
+- Added response documentation for 200, 400, 403, 404, and 500 responses in controller Swagger annotations.
+- Error payload schemas now appear in Swagger for validation, forbidden, not-found, and server error cases.
+- The booking bulk-cancel endpoint is included in the generated OpenAPI docs.
 
-If `frontend/dist` is missing, Maven logs a warning, skips the copy, and the backend
-still starts as an API-only service.
+3. Business validation improvements
+- Prevent deleting categories that are still assigned to one or more events.
+- Prevent deleting events when tickets are already booked against them.
+- Show valid validation/conflict error messages instead of generic or random exceptions.
+- Deletion conflicts now include contextual information such as assigned event names or booking references when available.
 
-## Run with hot reload (two ports)
+4. Booking cancellation enhancements
+- Added `PUT /api/bookings/event/{eventId}/cancel` for organisers/admins to cancel all bookings for an event.
+- This action restores available seats for the affected ticket categories after cancelling bookings.
+- Single booking cancellation remains available through `PUT /api/bookings/{id}/cancel`.
 
-For frontend development you usually want Vite's hot reload instead of rebuilding.
-Vite proxies `/api` to the backend, so the app still behaves as one origin:
+5. Service test coverage
+- Added test classes for services that were previously missing.
+- Updated existing service tests to align with the repository and business-rule changes.
+- Validation and guard conditions are covered for category deletion, event deletion, and booking cancellation flows.
 
+Key features
+- JWT-based authentication and authorization for ATTENDEE, ORGANISER, and ADMIN roles
+- Event creation, update, and deletion management
+- Ticket category and seat management
+- Booking creation, viewing, and cancellation
+- Secure admin and organiser operations
+- H2 file-mode database for local development
+- Actuator monitoring endpoints and a custom monitoring status endpoint
+
+Tech stack
+- Java 17+
+- Spring Boot 3.3.x
+- Spring Data JPA
+- Spring Security + JWT
+- H2 (local dev), PostgreSQL-ready configuration path
+- Maven
+
+Quick start
+
+From the project root:
+
+```bash
+mvn spring-boot:run
 ```
-cd backend && mvn spring-boot:run     # http://localhost:8080  (API)
-cd frontend && npm run dev            # http://localhost:5173  (UI, proxies /api -> 8080)
+
+Windows PowerShell:
+```powershell
+./scripts/run.ps1
 ```
 
-Both URLs work; 8080 serves the last `npm run build`, 5173 serves live code.
+Build jar:
+```bash
+mvn clean package
+java -jar target/eventzone-backend.jar
+```
 
-## Seeded accounts
+Default behavior
+- Runs on port 8080
+- Uses the `dev` profile with an H2 file database at `data/eventzonedb`
+- Seeds default users, categories, events, and sample data on start-up
 
-All three share the password `Password123!`:
+Prerequisites
+- Java 17 or newer
+- Maven
 
-| Email | Role | Can do |
-| --- | --- | --- |
-| `admin@eventzone.com` | ADMIN | Everything, plus category CRUD, event activation, user roles |
-| `org1@eventzone.com` | ORGANISER | Create/edit/delete own events and their ticket categories |
-| `user1@eventzone.com` | ATTENDEE | Browse, book, cancel own bookings |
+Seeded accounts (password: `Password@123`)
+- `admin@eventzone.com` — ADMIN
+- `organiser1@eventzone.com` — ORGANISER
+- `organiser2@eventzone.com` — ORGANISER
+- `attendee1@eventzone.com` — ATTENDEE
 
-New accounts can self-register as **ATTENDEE** or **ORGANISER** via
-`POST /api/auth/register` (`role` is optional and defaults to `ATTENDEE`).
-`ADMIN` cannot be self-assigned; an existing admin grants it via
-`PUT /api/users/{id}/role`.
+Configuration highlights
+- `server.port` default: `8080`
+- `spring.datasource.url` (dev): `jdbc:h2:file:./data/eventzonedb;AUTO_SERVER=TRUE`
+- JWT secret can be overridden via the `JWT_SECRET` environment variable
 
-A role change takes effect on the user's **next login**, since the role travels
-inside the JWT.
-
-## Database
-
-H2, file-backed at `backend/data/eventzone.mv.db`, so accounts and bookings survive
-restarts. `data.sql` re-runs on every startup and is written to insert only missing
-rows, so it never overwrites live data.
-
-**Delete `backend/data/` to reset to a clean seeded database.** Do this after pulling
-schema changes.
-
-Console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/eventzone`,
-user `sa`, no password).
-
-## Configuration
-
-| Setting | Default | Override |
-| --- | --- | --- |
-| Server port | 8080 | `PORT` env var, or `-Dspring-boot.run.arguments=--server.port=8081` |
-| JWT secret | dev placeholder | `JWT_SECRET` env var — **must** be set outside local dev |
-| JWT lifetime | 24h | `JWT_EXPIRATION_MS` |
-| Frontend API base | same origin | `VITE_API_BASE` (only needed if the UI is hosted apart from the API) |
-
-## API
+Important endpoints
 
 Auth
-- `POST /api/auth/register` — `{email, password, name, role?}` -> 201
-- `POST /api/auth/login` -> 200 `{token, name, role, email}`
-- `POST /api/auth/logout` -> 204
+- `POST /api/auth/register` — register an attendee
+- `POST /api/auth/login` — returns `{ token, name, role, email }`
+- `POST /api/auth/logout` — client-side token invalidation
 
 Events
-- `GET /api/events` — public; optional `?category=`; hides deactivated events
-- `GET /api/events/{id}` — public, includes ticket categories
-- `GET /api/events/mine` — organiser's own events
-- `GET /api/events/all` — admin; includes deactivated
-- `POST /api/events` / `PUT /api/events/{id}` / `DELETE /api/events/{id}` — owner or admin
-- `PUT /api/events/{id}/active` — admin; activate/deactivate
+- `GET /api/events` — list events, optional `?category=` filter
+- `GET /api/events/{id}` — fetch event details
+- `POST /api/events` — create event (ORGANISER)
+- `PUT /api/events/{id}` — update event (ORGANISER or ADMIN)
+- `DELETE /api/events/{id}` — delete event (ORGANISER or ADMIN)
 
 Ticket categories
-- `GET /api/events/{id}/ticket-categories` — public
-- `POST /api/events/{id}/ticket-categories` — owner or admin
-- `PUT`/`DELETE /api/ticket-categories/{id}` — owner or admin
-
-Categories
-- `GET /api/categories` — public
-- `POST /api/categories`, `PUT`/`DELETE /api/categories/{id}` — admin
+- `GET /api/ticket-categories` — list categories
+- `POST /api/ticket-categories` — create category
+- `PUT /api/ticket-categories/{id}` — update category
+- `DELETE /api/ticket-categories/{id}` — delete category (guarded by usage validation)
 
 Bookings
-- `POST /api/bookings` — `{ticketCategoryId, quantity}` (1-5)
-- `GET /api/bookings/mine`
-- `PUT /api/bookings/{id}/cancel` — restores seats
+- `POST /api/bookings` — create a booking
+- `GET /api/bookings/mine` — get current user's bookings
+- `PUT /api/bookings/{id}/cancel` — cancel a specific booking
+- `PUT /api/bookings/event/{eventId}/cancel` — cancel all bookings for an event (ORGANISER or ADMIN)
 
-Users
-- `GET /api/users`, `PUT /api/users/{id}/role` — admin
+Admin
+- `GET /api/admin/categories` and related admin category management routes
 
-Every failure returns the same shape:
+Monitoring
+- Human-friendly: `GET /api/monitoring/status`
+- Actuator: `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`
 
-```json
-{ "timestamp": "2025-09-12T12:00:00Z", "path": "/api/...", "error": "VALIDATION_ERROR", "message": "Field is required" }
-```
+Swagger / API docs
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-## Tests
+Testing
+- Unit tests: `mvn test`
+- Smoke tests: `./scripts/smoke-test.sh` or `./scripts/smoke-test.ps1`
+- Postman collection: `postman_collection.json`
 
-```
-cd backend && mvn test      # 49 tests
-cd frontend && npx tsc --noEmit
-```
+Project structure
+- `src/main/java/com/eventzone` — application source code
+- `src/test/java` — unit tests
+- `scripts/` — setup and smoke-test scripts
+- `data/` — local H2 database files
+- `TESTING.md` — additional testing notes and usage details
 
-## Notes
+Contributing
+- Follow the existing project conventions.
+- Add or update tests for new behavior and validation logic.
 
-- Passwords are BCrypt hashed; auth is a stateless JWT sent as `Authorization: Bearer <token>`.
-- Organisers may only manage events they own; admins may manage any.
-- Deleting an event or ticket category with bookings against it is refused (409) rather
-  than orphaning those bookings.
-- Changing a ticket category's capacity preserves seats already sold, and is refused if
-  the new total is below that number.
-- The JWT is stored in `localStorage`, which is readable by any script on the page.
-  Acceptable for local development; a production deployment should move to an
-  httpOnly cookie.
+License
+- See the repository license file if present.
+
+## Test coverage
+- Overall instruction coverage (JaCoCo): 79.46% (1153 covered / 1451 total)
+
+## Api response examples
+- "endpoints": [
+  {
+  "method": "OPTIONS",
+  "path": "/api/events/{id}",
+  "status": "200",
+  "outcome": "SUCCESS",
+  "totalResponseTimeMs": 754.79
+  },
+  {
+  "method": "OPTIONS",
+  "path": "/api/organiser/events",
+  "status": "200",
+  "outcome": "SUCCESS",
+  "totalResponseTimeMs": 656.69
+  },
+  {
+  "method": "GET",
+  "path": "/api/monitoring/status",
+  "status": "200",
+  "outcome": "SUCCESS",
+  "totalResponseTimeMs": 1237.22
+  },
+  {
+  "method": "PUT",
+  "path": "/api/bookings/event/{eventId}/cancel",
+  "status": "200",
+  "outcome": "SUCCESS",
+  "totalResponseTimeMs": 674.28
+  }
+  ]
+
+

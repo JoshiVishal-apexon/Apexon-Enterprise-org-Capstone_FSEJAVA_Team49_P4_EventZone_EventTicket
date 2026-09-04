@@ -1,0 +1,535 @@
+{
+  "info": {
+    "name": "EventZone API",
+    "description": "EventZone event ticket booking API.\n\nHow to use:\n1. Set {{baseUrl}} (default http://localhost:8080) and make sure the backend is running (`mvn spring-boot:run`).\n2. Run any 'Login as ...' request first — it automatically captures the returned JWT into the {{token}} collection variable (and also into {{adminToken}}/{{organiserToken}}/{{attendeeToken}}) via a Test script, so you don't need to copy/paste it.\n3. Most GET/POST requests also auto-capture the IDs they return (categoryId, eventId, ticketCategoryId, bookingId) into collection variables, so you can click through the requests top-to-bottom inside a folder without manually filling in IDs.\n4. Caveat: the DELETE requests are real deletes. If you run an entire folder or the whole collection back-to-back with Collection Runner, 'Delete event'/'Delete ticket category'/'Delete category' will remove the resource that later requests in a *different* folder still reference by {{eventId}}/{{ticketCategoryId}}/{{categoryId}}. For a full non-destructive walkthrough, either deselect the Delete requests in Runner, or just click through requests individually in the order listed (Auth -> Categories -> Events -> Ticket Categories -> Bookings -> Organiser Dashboard -> Admin), skipping Delete requests until last.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "organiserToken", "value": "", "type": "string" },
+    { "key": "attendeeToken", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "eventId", "value": "", "type": "string" },
+    { "key": "ticketCategoryId", "value": "", "type": "string" },
+    { "key": "bookingId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Password@123\",\n  \"name\": \"New Attendee\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "description": "Uses Postman's {{$randomEmail}} dynamic variable so this request can be re-run repeatedly without a 409 duplicate-email conflict."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register returns 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@eventzone.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "description": "Response: { token, name, role, email }. Test script auto-saves the token into {{token}} and {{adminToken}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login as Admin returns 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.token);",
+                  "pm.collectionVariables.set('adminToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Organiser",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organiser1@eventzone.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "description": "Test script auto-saves the token into {{token}} and {{organiserToken}}. Use this before the Events / Ticket Categories requests below, since they act as organiser1@eventzone.com."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login as Organiser returns 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.token);",
+                  "pm.collectionVariables.set('organiserToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Attendee",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"attendee1@eventzone.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "description": "Test script auto-saves the token into {{token}} and {{attendeeToken}}. Use this before the Bookings requests below."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login as Attendee returns 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.token);",
+                  "pm.collectionVariables.set('attendeeToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout returns 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List categories (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] },
+            "description": "Test script auto-saves the first category's id into {{categoryId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (Array.isArray(json) && json.length > 0) {",
+                  "    pm.collectionVariables.set('categoryId', json[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "List active events (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] },
+            "description": "No filter by default so seeded data is always returned. Add ?category=Concert (or Sports/Workshop/Conference) as a query param to filter. Test script auto-saves the first event's id into {{eventId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (Array.isArray(json) && json.length > 0) {",
+                  "    pm.collectionVariables.set('eventId', json[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get event detail (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] },
+            "description": "Test script auto-saves the first ticket category's id into {{ticketCategoryId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (Array.isArray(json.ticketCategories) && json.ticketCategories.length > 0) {",
+                  "    pm.collectionVariables.set('ticketCategoryId', json.ticketCategories[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create event (ORGANISER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organiserToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Indie Rock Night\",\n  \"description\": \"A night of live indie rock performances.\",\n  \"eventDate\": \"2026-06-15T19:00:00\",\n  \"venue\": \"The Quorum Club, Pune\",\n  \"coverImageUrl\": \"https://picsum.photos/seed/indierock/600/400\",\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] },
+            "description": "Requires 'Login as Organiser' to have run first (uses {{organiserToken}}). Run 'List categories' first so {{categoryId}} is populated. Test script auto-saves the new event's id into {{eventId}}, overwriting whatever 'List active events' set."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create event returns 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "if (json && json.id) { pm.collectionVariables.set('eventId', json.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update event (ORGANISER owner or ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organiserToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Indie Rock Night (Updated)\",\n  \"description\": \"Updated description.\",\n  \"eventDate\": \"2026-06-16T19:00:00\",\n  \"venue\": \"The Quorum Club, Pune\",\n  \"coverImageUrl\": \"https://picsum.photos/seed/indierock/600/400\",\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Update event returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Delete event (ORGANISER owner or ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organiserToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] },
+            "description": "DESTRUCTIVE: deletes whatever event {{eventId}} currently points to. Run this LAST, after you're done exploring Ticket Categories/Bookings for that event, or it will 404 those out."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Delete event returns 204', function () { pm.response.to.have.status(204); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ticket Categories",
+      "item": [
+        {
+          "name": "Create ticket category (ORGANISER owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organiserToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Early Bird\",\n  \"price\": 599.00,\n  \"totalSeats\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}", "ticket-categories"]
+            },
+            "description": "Requires 'Login as Organiser' and an {{eventId}} owned by that organiser (e.g. from 'Create event' above). Test script auto-saves the new ticket category's id into {{ticketCategoryId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create ticket category returns 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "if (json && json.id) { pm.collectionVariables.set('ticketCategoryId', json.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update ticket category (ORGANISER owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organiserToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Early Bird\",\n  \"price\": 649.00,\n  \"totalSeats\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket-categories/{{ticketCategoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket-categories", "{{ticketCategoryId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Update ticket category returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Delete ticket category (ORGANISER owner)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organiserToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket-categories/{{ticketCategoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket-categories", "{{ticketCategoryId}}"]
+            },
+            "description": "DESTRUCTIVE: run after Bookings requests below, or the booking flow will 404 on this ticket category."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Delete ticket category returns 204', function () { pm.response.to.have.status(204); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create booking (authenticated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{attendeeToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticketCategoryId\": \"{{ticketCategoryId}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/bookings", "host": ["{{baseUrl}}"], "path": ["api", "bookings"] },
+            "description": "Requires 'Login as Attendee' to have run first. Test script auto-saves the new booking's id into {{bookingId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create booking returns 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "if (json && json.id) { pm.collectionVariables.set('bookingId', json.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My bookings (authenticated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{attendeeToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/bookings/mine", "host": ["{{baseUrl}}"], "path": ["api", "bookings", "mine"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Cancel booking (owner only)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{attendeeToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}", "cancel"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Cancel booking returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Organiser Dashboard",
+      "item": [
+        {
+          "name": "My events with booking counts (ORGANISER)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organiserToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/organiser/events", "host": ["{{baseUrl}}"], "path": ["api", "organiser", "events"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Create category (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Theatre\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/categories", "host": ["{{baseUrl}}"], "path": ["api", "admin", "categories"] },
+            "description": "Requires 'Login as Admin'. Test script auto-saves the new category's id into {{categoryId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create category returns 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "if (json && json.id) { pm.collectionVariables.set('categoryId', json.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update category (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Theatre & Drama\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "categories", "{{categoryId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Update category returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Delete category (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "categories", "{{categoryId}}"]
+            },
+            "description": "DESTRUCTIVE. Note: deleting a category that still has events referencing it may 409/500 depending on FK constraints — try this against the 'Theatre' category created above, not a seeded category with events."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Delete category returns 204', function () { pm.response.to.have.status(204); });"] } }
+          ]
+        },
+        {
+          "name": "Deactivate event (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/events/{{eventId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "events", "{{eventId}}", "deactivate"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Deactivate event returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Activate event (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/events/{{eventId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "events", "{{eventId}}", "activate"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Activate event returns 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    }
+  ]
+}
